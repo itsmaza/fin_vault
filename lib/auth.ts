@@ -1,3 +1,4 @@
+"use server"
 // lib/auth.ts
 import { getSession } from "@/lib/session"
 import { connectDB } from "@/lib/db"

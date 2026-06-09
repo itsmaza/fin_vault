@@ -1,29 +1,59 @@
-export const dynamic = "force-dynamic";
-// app/dashboard/balance/page.tsx  (Overview)
-import { getBalanceOverview } from "@/actions/balance.actions"
-import { requireAuth } from "@/lib/auth"
-import { ArrowDownLeft, ArrowUpRight, TrendingUp, TrendingDown } from "lucide-react"
+"use client";
+
+import { useEffect, useState } from "react";
+import { getBalanceOverview } from "@/actions/balance.actions";
+import { requireAuth } from "@/lib/auth"; // Ensure this is a client-safe action or hook
+import { ArrowDownLeft, ArrowUpRight, TrendingUp, TrendingDown } from "lucide-react";
 
 function formatUSD(amount: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount)
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
 }
 
 function formatDate(date: Date | string) {
   return new Date(date).toLocaleDateString("en-US", {
-    month: "short", day: "numeric", year: "numeric",
-  })
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
-export default async function BalanceOverviewPage() {
-  const [result, user] = await Promise.all([
-    getBalanceOverview(),
-    requireAuth(),
-  ])
-  const data = result.data
+export default function BalanceOverviewPage() {
+  // Add state for data, user, and loading status
+  const [data, setData] = useState<any>(null);
+  const [user, setUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        const [result, currentUser] = await Promise.all([
+          getBalanceOverview(),
+          requireAuth(),
+        ]);
+        
+        setData(result.data);
+        setUser(currentUser);
+      } catch (error) {
+        console.error("Failed to fetch balance overview:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="p-6 max-w-[900px] flex justify-center items-center h-64">
+        <p className="text-[#8a9e96] font-medium">Loading balance overview...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-[900px]">
-
       {/* Header */}
       <div className="mb-6">
         <h1
@@ -111,11 +141,11 @@ export default async function BalanceOverviewPage() {
           </p>
         ) : (
           <div className="flex flex-col gap-2">
-            {data.recentTransactions.map((tx) => {
+            {data.recentTransactions.map((tx: any) => {
               // FIX: type এর পাশাপাশি কে sender সেটাও check করতে হবে
               const isCredit =
                 tx.type === "DEPOSIT" ||
-                String(tx.receiverId) === String(user._id)
+                String(tx.receiverId) === String(user?._id);
 
               return (
                 <div
@@ -136,7 +166,11 @@ export default async function BalanceOverviewPage() {
                     </div>
                     <div>
                       <p className="text-[12px] font-semibold text-[#0a3d2e]">
-                        {tx.type === "DEPOSIT" ? "Deposit" : isCredit ? "Received" : "Sent"}
+                        {tx.type === "DEPOSIT"
+                          ? "Deposit"
+                          : isCredit
+                          ? "Received"
+                          : "Sent"}
                       </p>
                       <p className="text-[11px] text-[#8a9e96]">
                         {formatDate(tx.createdAt)}
@@ -150,7 +184,8 @@ export default async function BalanceOverviewPage() {
                       }`}
                       style={{ fontFamily: "'Fraunces', serif" }}
                     >
-                      {isCredit ? "+" : "-"}{formatUSD(tx.amount)}
+                      {isCredit ? "+" : "-"}
+                      {formatUSD(tx.amount)}
                     </p>
                     <span
                       className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
@@ -165,11 +200,11 @@ export default async function BalanceOverviewPage() {
                     </span>
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
         )}
       </div>
     </div>
-  )
+  );
 }
