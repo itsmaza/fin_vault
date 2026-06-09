@@ -45,7 +45,6 @@ export async function addBeneficiary(
     return fail("Failed to add beneficiary")
   }
 }
-
 export async function getBeneficiaries(): Promise<ActionResult<SafeBeneficiary[]>> {
   try {
     await connectDB()
@@ -55,7 +54,16 @@ export async function getBeneficiaries(): Promise<ActionResult<SafeBeneficiary[]
       .sort({ createdAt: -1 })
       .lean()
 
-    return ok("Beneficiaries fetched", beneficiaries as unknown as SafeBeneficiary[])
+    // FIX: ObjectId গুলো string এ convert করতে হবে
+    // .lean() দিলেও ObjectId plain object না, তাই Client Component এ pass করলে error আসে
+    const serialized = beneficiaries.map((b) => ({
+      ...b,
+      _id: b._id.toString(),
+      userId: b.userId.toString(),
+      createdAt: b.createdAt instanceof Date ? b.createdAt.toISOString() : b.createdAt,
+    }))
+
+    return ok("Beneficiaries fetched", serialized as unknown as SafeBeneficiary[])
   } catch {
     return fail("Failed to fetch beneficiaries")
   }

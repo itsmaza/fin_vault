@@ -1,11 +1,20 @@
+// components/Header.tsx  ← client component
 "use client"
 
 import Link from "next/link"
 import { useState } from "react"
 import { Layers, Menu, X } from "lucide-react"
+import { useRouter } from "next/navigation"
 
-export default function Header() {
+interface HeaderProps {
+  isLoggedIn: boolean
+}
+
+export default function Header({ isLoggedIn }: HeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const router = useRouter()
+
+  const handleDashboard = () => router.push("/dashboard")
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-[#e8efeb]">
@@ -24,13 +33,13 @@ export default function Header() {
           </span>
         </Link>
 
-        {/* Desktop nav links */}
+        {/* Desktop nav */}
         <ul className="hidden md:flex items-center gap-7">
           {[
-            { label: "Features", href: "#features" },
+            { label: "Features",     href: "#features" },
             { label: "How it works", href: "#how-it-works" },
-            { label: "Security", href: "#security" },
-            { label: "About", href: "#about" },
+            { label: "Security",     href: "#security" },
+            { label: "About",        href: "#about" },
           ].map((link) => (
             <li key={link.label}>
               <Link
@@ -45,24 +54,35 @@ export default function Header() {
 
         {/* Desktop buttons */}
         <div className="hidden md:flex items-center gap-3">
-          <Link
-            href="/login"
-            className="px-4 py-2 text-[13px] font-semibold text-[#0a3d2e] border border-[#c8ddd4] rounded-[8px] hover:bg-[#f6faf8] transition-colors"
-          >
-            Sign in
-          </Link>
-          <Link
-            href="/register"
-            className="px-4 py-2 text-[13px] font-semibold text-white bg-[#0a3d2e] rounded-[8px] hover:bg-[#0f5c44] transition-colors"
-          >
-            Get started
-          </Link>
+          {isLoggedIn ? (
+            <button
+              onClick={handleDashboard}
+              className="cursor-pointer px-4 py-2 text-[13px] font-semibold text-white bg-[#0a3d2e] rounded-[8px] hover:bg-[#0f5c44] transition-colors"
+            >
+              Go to Dashboard
+            </button>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="px-4 py-2 text-[13px] font-semibold text-[#0a3d2e] border border-[#c8ddd4] rounded-[8px] hover:bg-[#f6faf8] transition-colors"
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/register"
+                className="px-4 py-2 text-[13px] font-semibold text-white bg-[#0a3d2e] rounded-[8px] hover:bg-[#0f5c44] transition-colors"
+              >
+                Get started
+              </Link>
+            </>
+          )}
         </div>
 
-        {/* Mobile menu toggle */}
+        {/* Mobile toggle */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden p-2 text-[#0a3d2e]"
+          className="cursor-pointer md:hidden p-2 text-[#0a3d2e]"
         >
           {mobileOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
@@ -71,23 +91,46 @@ export default function Header() {
       {/* Mobile dropdown */}
       {mobileOpen && (
         <div className="md:hidden bg-white border-t border-[#e8efeb] px-6 py-4 flex flex-col gap-4">
-          {["Features", "How it works", "Security", "About"].map((label) => (
+          {[
+            { label: "Features",     href: "#features" },
+            { label: "How it works", href: "#how-it-works" },
+            { label: "Security",     href: "#security" },
+            { label: "About",        href: "#about" },
+          ].map(({ label, href }) => (
             <Link
               key={label}
-              href={`#${label.toLowerCase().replace(" ", "-")}`}
+              href={href}
               onClick={() => setMobileOpen(false)}
               className="text-[14px] font-medium text-[#4a6358]"
             >
               {label}
             </Link>
           ))}
+
           <div className="flex flex-col gap-2 pt-2 border-t border-[#e8efeb]">
-            <Link href="/login" className="text-center py-2.5 border border-[#c8ddd4] rounded-[8px] text-[13px] font-semibold text-[#0a3d2e]">
-              Sign in
-            </Link>
-            <Link href="/register" className="text-center py-2.5 bg-[#0a3d2e] rounded-[8px] text-[13px] font-semibold text-white">
-              Get started
-            </Link>
+            {isLoggedIn ? (
+              <button
+                onClick={handleDashboard}
+                className="cursor-pointer text-center py-2.5 bg-[#0a3d2e] rounded-[8px] text-[13px] font-semibold text-white"
+              >
+                Go to Dashboard
+              </button>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="text-center py-2.5 border border-[#c8ddd4] rounded-[8px] text-[13px] font-semibold text-[#0a3d2e]"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href="/register"
+                  className="text-center py-2.5 bg-[#0a3d2e] rounded-[8px] text-[13px] font-semibold text-white"
+                >
+                  Get started
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}
