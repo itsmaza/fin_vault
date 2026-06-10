@@ -1,47 +1,40 @@
+// actions/deposit.actions.ts
 "use server"
 
 import { connectDB } from "@/lib/db"
-
+import { User, Transaction } from "@/models"
 import { requireAuth } from "@/lib/auth"
 import { ok, fail } from "@/lib/response"
+import mongoose from "mongoose"
 import type { ActionResult, SafeTransaction, DepositInput } from "@/types"
-import { Transaction, User } from "@/models"
+
+const PAGE_SIZE = 10
 
 // ─── Test Cards ───────────────────────────────────────────
 const TEST_CARDS: Record<string, { valid: boolean; reason?: string }> = {
   "4242424242424242": { valid: true },
   "4000000000000002": { valid: true },
   "4000000000009995": { valid: false, reason: "Insufficient funds on card" },
-  "4000000000000069": { valid: false, reason: "Card expired" },
+  "4000000000000069": { valid: false, reason: "Card has expired" },
   "4000000000000119": { valid: false, reason: "Card processing error" },
 }
 
 // ─── Card Validator ───────────────────────────────────────
-function validateCard(card: DepositInput["card"]) {
+function validateCard(card: DepositInput["card"]): { valid: boolean; reason?: string } {
   const rawNumber = card.number.replace(/\s/g, "")
 
-  // Test card check
   const testCard = TEST_CARDS[rawNumber]
   if (!testCard) return { valid: false, reason: "Invalid card number" }
   if (!testCard.valid) return { valid: false, reason: testCard.reason }
 
-  // Expiry check (MM/YY)
   const [mm, yy] = card.expiry.split("/").map((v) => parseInt(v.trim()))
   if (!mm || !yy) return { valid: false, reason: "Invalid expiry date" }
 
-  const now = new Date()
   const expiry = new Date(2000 + yy, mm - 1)
-  if (expiry < now) return { valid: false, reason: "Card has expired" }
+  if (expiry < new Date()) return { valid: false, reason: "Card has expired" }
 
-  // CVV check
-  if (!/^\d{3,4}$/.test(card.cvv)) {
-    return { valid: false, reason: "Invalid CVV" }
-  }
-
-  // Name check
-  if (!card.name.trim()) {
-    return { valid: false, reason: "Cardholder name is required" }
-  }
+  if (!/^\d{3,4}$/.test(card.cvv)) return { valid: false, reason: "Invalid CVV" }
+  if (!card.name.trim()) return { valid: false, reason: "Cardholder name is required" }
 
   return { valid: true }
 }
@@ -55,68 +48,96 @@ export async function deposit(
     const user = await requireAuth()
 
     if (input.amount <= 0) return fail("Amount must be greater than 0")
-    if (input.amount > 50000) return fail("Maximum deposit is $50,000")
+    if (input.amount > 100000) return fail("Maximum deposit is $100,000")
 
-    // Validate card
     const cardCheck = validateCard(input.card)
     if (!cardCheck.valid) return fail(cardCheck.reason ?? "Card validation failed")
 
-    // Update balance
-    await User.findByIdAndUpdate(user._id, {
+    const userId = new mongoose.Types.ObjectId(user._id.toString())
+
+    await User.findByIdAndUpdate(userId, {
       $inc: { balance: input.amount },
     })
 
-    // Create transaction
     const transaction = await Transaction.create({
       amount: input.amount,
       type: "DEPOSIT",
       status: "COMPLETED",
-      senderId: user._id,
-      receiverId: user._id,
+      senderId: userId,
+      receiverId: userId,
       note: input.note ?? "Card deposit",
       reference: `DEP-${Date.now()}`,
     })
 
     const result = await Transaction.findById(transaction._id).lean()
-    return ok(`$${input.amount.toFixed(2)} deposited successfully`, result as unknown as SafeTransaction)
-  } catch {
+    return ok(
+      `$${input.amount.toFixed(2)} deposited successfully`,
+      result as unknown as SafeTransaction
+    )
+  } catch (error) {
+    console.error("Deposit error:", error)
     return fail("Deposit failed. Please try again.")
   }
 }
 
-// ─── Get Deposits ─────────────────────────────────────────
-export async function getDeposits(): Promise<ActionResult<SafeTransaction[]>> {
+// ─── Get Deposits Filtered ────────────────────────────────
+type DepositFilters = {
+  minAmount?: number
+  maxAmount?: number
+  startDate?: string
+  endDate?: string
+  status?: string
+  page?: number
+}
+
+export async function getDepositsFiltered(
+  filters: DepositFilters
+): Promise<ActionResult<{ transactions: SafeTransaction[]; hasMore: boolean }>> {
   try {
     await connectDB()
     const user = await requireAuth()
 
-    const deposits = await Transaction.find({
-      senderId: user._id,
+    const userId = new mongoose.Types.ObjectId(user._id.toString())
+
+    const query: Record<string, unknown> = {
+      senderId: userId,
       type: "DEPOSIT",
-    })
+    }
+
+    if (filters.status) {
+      query.status = filters.status
+    }
+
+    if (filters.minAmount || filters.maxAmount) {
+      query.amount = {
+        ...(filters.minAmount && { $gte: Number(filters.minAmount) }),
+        ...(filters.maxAmount && { $lte: Number(filters.maxAmount) }),
+      }
+    }
+
+    if (filters.startDate || filters.endDate) {
+      query.createdAt = {
+        ...(filters.startDate && { $gte: new Date(filters.startDate) }),
+        ...(filters.endDate && {
+          $lte: new Date(new Date(filters.endDate).setHours(23, 59, 59, 999)),
+        }),
+      }
+    }
+
+    const skip = ((filters.page ?? 1) - 1) * PAGE_SIZE
+
+    const txs = await Transaction.find(query)
       .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(PAGE_SIZE + 1)
       .lean()
 
-    return ok("Deposits fetched", deposits as unknown as SafeTransaction[])
-  } catch {
+    return ok("Deposits fetched", {
+      transactions: txs.slice(0, PAGE_SIZE) as unknown as SafeTransaction[],
+      hasMore: txs.length > PAGE_SIZE,
+    })
+  } catch (error) {
+    console.error("getDepositsFiltered error:", error)
     return fail("Failed to fetch deposits")
   }
-}
-
-export async function getDepositById(id: string): Promise<ActionResult<SafeTransaction>> {
-    try {
-        await connectDB();
-        const user = await requireAuth();
-        const deposit = await Transaction.findOne({
-            _id: id,
-            senderId: user._id,
-            type: 'DEPOSIT',
-        }).lean();
-
-        if (!deposit) return fail('Deposit not found');
-
-        return ok('Deposit fetched', deposit as unknown as SafeTransaction);
-    } catch {
-        return fail('Failed to fetch deposit');
-    }
 }
