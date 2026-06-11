@@ -36,3 +36,15 @@ export type SafeUser = {
   createdAt: Date
   updatedAt: Date
 }
+
+
+export type SafeApiKey = {
+  _id: string
+  key: string
+  name: string
+  isActive: boolean
+  webhookUrl?: string    
+  redirectUrl: string   
+  createdAt: Date
+  lastUsedAt?: Date
+}
