@@ -1,14 +1,17 @@
-import { getCurrentUser } from '@/lib/auth';
-import { fail, ok } from '@/lib/response';
+// actions/user.actions.ts
+"use server"
 
-export const getProfile = async () => {
-    try {
-        const currenUser = await getCurrentUser();
-        if (!currenUser) {
-            return ok('No user logged in', null);
-        }
-        return ok('Profile fetched successfully', currenUser);
-    } catch (error) {
-        return fail('Failed to fetch profile');
-    }
-};
+import { connectDB } from "@/lib/db"
+import { requireAuth } from "@/lib/auth"
+import { ok, fail } from "@/lib/response"
+import type { ActionResult, SafeUser } from "@/types"
+
+export async function getProfile(): Promise<ActionResult<SafeUser>> {
+  try {
+    await connectDB()
+    const user = await requireAuth()
+    return ok("Profile fetched successfully", user)
+  } catch {
+    return fail("Unauthorized")
+  }
+}
