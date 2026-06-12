@@ -271,11 +271,11 @@ export default function WithdrawalsPage() {
 
       {/* Table */}
       <div className="bg-white border border-[#dde8e3] rounded-[16px] overflow-hidden">
-        <div className="grid grid-cols-4 px-4 py-3 border-b border-[#f0f5f2] bg-[#f6faf8]">
-          {["Date", "Reference", "Amount", "Status"].map((h) => (
-            <p key={h} className="text-[10px] font-semibold text-[#8a9e96] tracking-wide uppercase">{h}</p>
-          ))}
-        </div>
+     <div className="grid grid-cols-5 px-4 py-3 border-b border-[#f0f5f2] bg-[#f6faf8]">
+  {["Date & Time", "Bank", "Reference", "Amount", "Status"].map((h) => (
+    <p key={h} className="text-[10px] font-semibold text-[#8a9e96] tracking-wide uppercase">{h}</p>
+  ))}
+</div>
 
         {loading && <div className="flex items-center justify-center py-12"><Loader2 size={20} className="animate-spin text-[#1d9e75]" /></div>}
 
@@ -298,22 +298,34 @@ export default function WithdrawalsPage() {
           </div>
         )}
 
-        {!loading && transactions.map((tx) => (
-          <div key={tx._id} className="grid grid-cols-4 px-4 py-3.5 border-b border-[#f0f5f2] last:border-0 hover:bg-[#f6faf8] transition-colors items-center">
-            <p className="text-[12px] text-[#5a7568]">{formatDate(tx.createdAt)}</p>
-            <p className="text-[12px] font-mono text-[#5a7568] truncate pr-2">{tx.reference ?? "—"}</p>
-            <p className="text-[13px] font-bold text-[#633806]" style={{ fontFamily: "'Fraunces', serif" }}>
-              -{formatUSD(tx.amount)}
-            </p>
-            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full w-fit ${
-              tx.status === "COMPLETED" ? "bg-[#E1F5EE] text-[#085041]"
-              : tx.status === "PENDING" ? "bg-[#FFF8E7] text-[#B45309]"
-              : "bg-red-50 text-red-500"
-            }`}>
-              {tx.status}
-            </span>
-          </div>
-        ))}
+        
+{!loading && transactions.map((tx) => (
+  <div key={tx._id} className="grid grid-cols-5 px-4 py-3.5 border-b border-[#f0f5f2] last:border-0 hover:bg-[#f6faf8] transition-colors items-center">
+    <div>
+      <p className="text-[12px] text-[#5a7568]">{formatDate(tx.createdAt)}</p>
+      <p className="text-[10px] text-[#8a9e96]">
+        {new Date(tx.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}
+      </p>
+    </div>
+    <p className="text-[12px] text-[#5a7568] truncate pr-2">
+      {tx.bankDetails?.bankName ?? "—"}
+    </p>
+    <p className="text-[11px] font-mono text-[#8a9e96] truncate pr-2">{tx.reference ?? "—"}</p>
+    <p className="text-[13px] font-bold text-[#633806]" style={{ fontFamily: "'Fraunces', serif" }}>
+      -{formatUSD(tx.amount)}
+    </p>
+    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full w-fit ${
+      tx.status === "COMPLETED" ? "bg-[#E1F5EE] text-[#085041]"
+      : tx.status === "PENDING"  ? "bg-[#FFF8E7] text-[#B45309]"
+      : "bg-red-50 text-red-500"
+    }`}>
+      {tx.status}
+    </span>
+  </div>
+))}
+
+
+
       </div>
 
       {/* Load more */}

@@ -4,6 +4,7 @@ import { PaymentIntent } from "@/models"
 import { randomBytes } from "crypto"
 import { apiAuth } from "@/lib/middleware/api-auth"
 import { apiError, apiOk } from "@/lib/api/response"
+import { metadata } from "@/app/layout"
 
 function generateIntentId(): string {
   return `pi_${randomBytes(16).toString("hex")}`
@@ -15,8 +16,6 @@ export async function POST(request: NextRequest) {
 
   let body: {
     amount?:      number
-    redirectUrl?: string
-    webhookUrl?:  string
     metadata?:    Record<string, unknown>
   }
 
@@ -26,9 +25,9 @@ export async function POST(request: NextRequest) {
     return apiError("Invalid JSON body")
   }
 
-  const { amount, redirectUrl, webhookUrl, metadata } = body
+  const { amount, metadata } = body
 
-  console.log(amount, redirectUrl, webhookUrl, metadata)
+  console.log(amount,  metadata)
   
   // Validate
   if (!amount || typeof amount !== "number" || amount <= 0) {
@@ -36,19 +35,6 @@ export async function POST(request: NextRequest) {
   }
   if (amount > 100000) {
     return apiError("Maximum payment amount is $100,000")
-  }
-  if (!redirectUrl || typeof redirectUrl !== "string") {
-    return apiError("redirectUrl is required")
-  }
-  try {
-    new URL(redirectUrl)
-  } catch {
-    return apiError("redirectUrl must be a valid URL")
-  }
-  if (webhookUrl) {
-    try { new URL(webhookUrl) } catch {
-      return apiError("webhookUrl must be a valid URL")
-    }
   }
 
   const intentId  = generateIntentId()
@@ -59,8 +45,6 @@ export async function POST(request: NextRequest) {
     merchantId:  auth.user._id,
     amount,
     status:      "PENDING",
-    redirectUrl,
-    webhookUrl:  webhookUrl || undefined, // Changed this line to use undefined instead of null
     metadata:    metadata ?? {},
     expiresAt,
   })

@@ -14,28 +14,29 @@ type TxFilters = {
   minAmount?: number
   maxAmount?: number
   startDate?: string
-  endDate?: string
-  status?: string
-  page?: number
+  endDate?:   string
+  status?:    string
+  page?:      number
 }
 
-// ─── Helper: serialize ────────────────────────────────────
+// ─── Serialize ────────────────────────────────────────────
 function serializeTx(raw: any): SafeTransaction {
   return {
     ...raw,
-    _id: raw._id.toString(),
-    senderId: raw.senderId.toString(),
+    _id:        raw._id.toString(),
+    senderId:   raw.senderId.toString(),
     receiverId: raw.receiverId.toString(),
-    createdAt: raw.createdAt instanceof Date
+    merchantId: raw.merchantId?.toString() ?? undefined,
+    createdAt:  raw.createdAt instanceof Date
       ? raw.createdAt.toISOString()
       : raw.createdAt,
   }
 }
 
-// ─── Helper: build query ──────────────────────────────────
+// ─── Build query ──────────────────────────────────────────
 function buildQuery(
-  userId: mongoose.Types.ObjectId,
-  filters: TxFilters,
+  userId:    mongoose.Types.ObjectId,
+  filters:   TxFilters,
   direction: "all" | "sent" | "received"
 ): Record<string, unknown> {
   const query: Record<string, unknown> = {}
@@ -44,7 +45,7 @@ function buildQuery(
     query.$or = [{ senderId: userId }, { receiverId: userId }]
   } else if (direction === "sent") {
     query.senderId = userId
-    query.type = "TRANSFER"
+    query.type     = { $in: ["TRANSFER", "WITHDRAWAL", "PAYMENT"] }
   } else {
     query.receiverId = userId
   }
@@ -70,19 +71,18 @@ function buildQuery(
   return query
 }
 
-// ─── Helper: fetch ────────────────────────────────────────
+// ─── Fetch helper ─────────────────────────────────────────
 async function fetchTransactions(
-  direction: "all" | "sent" | "received",
-  filters: TxFilters,
-  sortOrder: 1 | -1 = -1
+  direction:  "all" | "sent" | "received",
+  filters:    TxFilters,
+  sortOrder:  1 | -1 = -1
 ): Promise<ActionResult<{ transactions: SafeTransaction[]; hasMore: boolean }>> {
   try {
     await connectDB()
-    const user = await requireAuth()
-
+    const user   = await requireAuth()
     const userId = new mongoose.Types.ObjectId(user._id.toString())
-    const query = buildQuery(userId, filters, direction)
-    const skip = ((filters.page ?? 1) - 1) * PAGE_SIZE
+    const query  = buildQuery(userId, filters, direction)
+    const skip   = ((filters.page ?? 1) - 1) * PAGE_SIZE
 
     const txs = await Transaction.find(query)
       .sort({ createdAt: sortOrder })
@@ -92,7 +92,7 @@ async function fetchTransactions(
 
     return ok("Transactions fetched", {
       transactions: txs.slice(0, PAGE_SIZE).map(serializeTx),
-      hasMore: txs.length > PAGE_SIZE,
+      hasMore:      txs.length > PAGE_SIZE,
     })
   } catch (error) {
     console.error("fetchTransactions error:", error)
@@ -100,31 +100,19 @@ async function fetchTransactions(
   }
 }
 
-// ─── All Transactions ─────────────────────────────────────
-export async function getAllTransactions(
-  filters: TxFilters
-): Promise<ActionResult<{ transactions: SafeTransaction[]; hasMore: boolean }>> {
+export async function getAllTransactions(filters: TxFilters) {
   return fetchTransactions("all", filters, -1)
 }
 
-// ─── Sent ─────────────────────────────────────────────────
-export async function getSentTransactions(
-  filters: TxFilters
-): Promise<ActionResult<{ transactions: SafeTransaction[]; hasMore: boolean }>> {
+export async function getSentTransactions(filters: TxFilters) {
   return fetchTransactions("sent", filters, -1)
 }
 
-// ─── Received ─────────────────────────────────────────────
-export async function getReceivedTransactions(
-  filters: TxFilters
-): Promise<ActionResult<{ transactions: SafeTransaction[]; hasMore: boolean }>> {
+export async function getReceivedTransactions(filters: TxFilters) {
   return fetchTransactions("received", filters, -1)
 }
 
-// ─── History (oldest first) ───────────────────────────────
-export async function getTransactionHistory(
-  filters: TxFilters
-): Promise<ActionResult<{ transactions: SafeTransaction[]; hasMore: boolean }>> {
+export async function getTransactionHistory(filters: TxFilters) {
   return fetchTransactions("all", filters, 1)
 }
 
@@ -149,17 +137,17 @@ export async function sendMoney(
       email: input.receiverEmail.toLowerCase(),
     })
 
-    if (!receiver) return fail("No account found with this email")
+    if (!receiver)                    return fail("No account found with this email")
     if (receiver.status !== "ACTIVE") return fail("Recipient account is not active")
 
-    const session = await mongoose.startSession()
+    const session   = await mongoose.startSession()
     let createdTx: SafeTransaction | null = null
 
     try {
       await session.withTransaction(async () => {
         const updatedSender = await User.findOneAndUpdate(
           {
-            _id: new mongoose.Types.ObjectId(sender._id.toString()),
+            _id:     new mongoose.Types.ObjectId(sender._id.toString()),
             balance: { $gte: input.amount },
           },
           { $inc: { balance: -input.amount } },
@@ -175,31 +163,19 @@ export async function sendMoney(
         )
 
         const [tx] = await Transaction.create(
-          [
-            {
-              amount: input.amount,
-              type: "TRANSFER",
-              status: "COMPLETED",
-              senderId: new mongoose.Types.ObjectId(sender._id.toString()),
-              receiverId: receiver._id,
-              note: input.note ?? undefined,
-              reference: `TXN-${Date.now()}`,
-            },
-          ],
+          [{
+            amount:     input.amount,
+            type:       "TRANSFER",
+            status:     "COMPLETED",
+            senderId:   new mongoose.Types.ObjectId(sender._id.toString()),
+            receiverId: receiver._id,
+            note:       input.note ?? undefined,
+            reference:  `TXN-${Date.now()}`,
+          }],
           { session }
         )
 
-        // FIX: ObjectId গুলো manually string এ convert করতে হবে
-        const raw = tx.toObject()
-        createdTx = {
-          ...raw,
-          _id: raw._id.toString(),
-          senderId: raw.senderId.toString(),
-          receiverId: raw.receiverId.toString(),
-          createdAt: raw.createdAt instanceof Date
-            ? raw.createdAt.toISOString()
-            : raw.createdAt,
-        } as unknown as SafeTransaction
+        createdTx = serializeTx(tx.toObject())
       })
     } finally {
       session.endSession()

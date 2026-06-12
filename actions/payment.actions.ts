@@ -18,7 +18,6 @@ export async function getPaymentIntent(
     const intent = await PaymentIntent.findOne({ intentId }).lean()
     if (!intent) return fail("Payment intent not found")
 
-    // Check expired
     if (new Date() > intent.expiresAt && intent.status === "PENDING") {
       await PaymentIntent.findByIdAndUpdate(intent._id, { status: "EXPIRED" })
       return fail("Payment link has expired")
@@ -57,31 +56,25 @@ export async function confirmPayment(
 
     if (!intent) return fail("Payment intent not found or already processed")
 
-    // Check expired
     if (new Date() > intent.expiresAt) {
       await intent.updateOne({ status: "EXPIRED" })
       return fail("Payment link has expired")
     }
 
-    // Check self payment
     if (intent.merchantId.toString() === customer._id.toString()) {
       return fail("Cannot pay yourself")
     }
 
-    // Check balance
     if (customer.balance < intent.amount) {
       return fail("Insufficient balance")
     }
 
-    const customerId  = new mongoose.Types.ObjectId(customer._id.toString())
-    const merchantId  = intent.merchantId
-
-    // Atomic payment
-    const session = await mongoose.startSession()
+    const customerId = new mongoose.Types.ObjectId(customer._id.toString())
+    const merchantId = intent.merchantId
+    const session    = await mongoose.startSession()
 
     try {
       await session.withTransaction(async () => {
-        // Deduct from customer
         const updated = await User.findOneAndUpdate(
           { _id: customerId, balance: { $gte: intent.amount } },
           { $inc: { balance: -intent.amount } },
@@ -89,35 +82,30 @@ export async function confirmPayment(
         )
         if (!updated) throw new Error("Insufficient balance")
 
-        // Add to merchant
         await User.findByIdAndUpdate(
           merchantId,
           { $inc: { balance: intent.amount } },
           { session }
         )
 
-        // Create transaction
         await Transaction.create(
           [{
             amount:     intent.amount,
-            type:       "TRANSFER",
+            type:       "PAYMENT",
             status:     "COMPLETED",
             senderId:   customerId,
             receiverId: merchantId,
             note:       `Payment: ${intent.intentId}`,
             reference:  intent.intentId,
+            intentId:   intent.intentId,
+            merchantId: merchantId,
           }],
           { session }
         )
 
-        // Update intent
         await PaymentIntent.findByIdAndUpdate(
           intent._id,
-          {
-            status:     "COMPLETED",
-            customerId,
-            paidAt:     new Date(),
-          },
+          { status: "COMPLETED", customerId, paidAt: new Date() },
           { session }
         )
       })
@@ -125,7 +113,6 @@ export async function confirmPayment(
       session.endSession()
     }
 
-    // Send webhook
     if (intent.webhookUrl) {
       await sendWebhook(intent.webhookUrl, {
         event:    "payment.success",
@@ -135,7 +122,6 @@ export async function confirmPayment(
       })
     }
 
-    // Redirect URL with params
     const redirectUrl = new URL(intent.redirectUrl)
     redirectUrl.searchParams.set("status",   "success")
     redirectUrl.searchParams.set("intentId", intent.intentId)

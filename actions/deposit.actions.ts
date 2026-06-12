@@ -10,7 +10,6 @@ import type { ActionResult, SafeTransaction, DepositInput } from "@/types"
 
 const PAGE_SIZE = 10
 
-// ─── Test Cards ───────────────────────────────────────────
 const TEST_CARDS: Record<string, { valid: boolean; reason?: string }> = {
   "4242424242424242": { valid: true },
   "4000000000000002": { valid: true },
@@ -19,12 +18,11 @@ const TEST_CARDS: Record<string, { valid: boolean; reason?: string }> = {
   "4000000000000119": { valid: false, reason: "Card processing error" },
 }
 
-// ─── Card Validator ───────────────────────────────────────
 function validateCard(card: DepositInput["card"]): { valid: boolean; reason?: string } {
   const rawNumber = card.number.replace(/\s/g, "")
 
   const testCard = TEST_CARDS[rawNumber]
-  if (!testCard) return { valid: false, reason: "Invalid card number" }
+  if (!testCard)       return { valid: false, reason: "Invalid card number" }
   if (!testCard.valid) return { valid: false, reason: testCard.reason }
 
   const [mm, yy] = card.expiry.split("/").map((v) => parseInt(v.trim()))
@@ -34,12 +32,11 @@ function validateCard(card: DepositInput["card"]): { valid: boolean; reason?: st
   if (expiry < new Date()) return { valid: false, reason: "Card has expired" }
 
   if (!/^\d{3,4}$/.test(card.cvv)) return { valid: false, reason: "Invalid CVV" }
-  if (!card.name.trim()) return { valid: false, reason: "Cardholder name is required" }
+  if (!card.name.trim())            return { valid: false, reason: "Cardholder name is required" }
 
   return { valid: true }
 }
 
-// ─── Deposit ──────────────────────────────────────────────
 export async function deposit(
   input: DepositInput
 ): Promise<ActionResult<SafeTransaction>> {
@@ -47,26 +44,24 @@ export async function deposit(
     await connectDB()
     const user = await requireAuth()
 
-    if (input.amount <= 0) return fail("Amount must be greater than 0")
-    if (input.amount > 100000) return fail("Maximum deposit is $100,000")
+    if (input.amount <= 0)       return fail("Amount must be greater than 0")
+    if (input.amount > 100000)   return fail("Maximum deposit is $100,000")
 
     const cardCheck = validateCard(input.card)
     if (!cardCheck.valid) return fail(cardCheck.reason ?? "Card validation failed")
 
     const userId = new mongoose.Types.ObjectId(user._id.toString())
 
-    await User.findByIdAndUpdate(userId, {
-      $inc: { balance: input.amount },
-    })
+    await User.findByIdAndUpdate(userId, { $inc: { balance: input.amount } })
 
     const transaction = await Transaction.create({
-      amount: input.amount,
-      type: "DEPOSIT",
-      status: "COMPLETED",
-      senderId: userId,
+      amount:     input.amount,
+      type:       "DEPOSIT",
+      status:     "COMPLETED",
+      senderId:   userId,
       receiverId: userId,
-      note: input.note ?? "Card deposit",
-      reference: `DEP-${Date.now()}`,
+      note:       input.note ?? "Card deposit",
+      reference:  `DEP-${Date.now()}`,
     })
 
     const result = await Transaction.findById(transaction._id).lean()
@@ -80,14 +75,13 @@ export async function deposit(
   }
 }
 
-// ─── Get Deposits Filtered ────────────────────────────────
 type DepositFilters = {
   minAmount?: number
   maxAmount?: number
   startDate?: string
-  endDate?: string
-  status?: string
-  page?: number
+  endDate?:   string
+  status?:    string
+  page?:      number
 }
 
 export async function getDepositsFiltered(
@@ -95,18 +89,15 @@ export async function getDepositsFiltered(
 ): Promise<ActionResult<{ transactions: SafeTransaction[]; hasMore: boolean }>> {
   try {
     await connectDB()
-    const user = await requireAuth()
-
+    const user   = await requireAuth()
     const userId = new mongoose.Types.ObjectId(user._id.toString())
 
     const query: Record<string, unknown> = {
       senderId: userId,
-      type: "DEPOSIT",
+      type:     "DEPOSIT",
     }
 
-    if (filters.status) {
-      query.status = filters.status
-    }
+    if (filters.status) query.status = filters.status
 
     if (filters.minAmount || filters.maxAmount) {
       query.amount = {
@@ -125,8 +116,7 @@ export async function getDepositsFiltered(
     }
 
     const skip = ((filters.page ?? 1) - 1) * PAGE_SIZE
-
-    const txs = await Transaction.find(query)
+    const txs  = await Transaction.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(PAGE_SIZE + 1)
@@ -134,7 +124,7 @@ export async function getDepositsFiltered(
 
     return ok("Deposits fetched", {
       transactions: txs.slice(0, PAGE_SIZE) as unknown as SafeTransaction[],
-      hasMore: txs.length > PAGE_SIZE,
+      hasMore:      txs.length > PAGE_SIZE,
     })
   } catch (error) {
     console.error("getDepositsFiltered error:", error)
