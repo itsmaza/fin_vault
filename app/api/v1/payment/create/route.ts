@@ -27,7 +27,6 @@ export async function POST(request: NextRequest) {
 
   const { amount, metadata } = body
 
-  console.log(amount,  metadata)
   
   // Validate
   if (!amount || typeof amount !== "number" || amount <= 0) {

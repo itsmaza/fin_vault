@@ -11,6 +11,4 @@ function formatDateTime(date: Date | string) {
         hour12: true,
     });
 }
-export {
-  formatDateTime
-}
+export { formatDateTime };

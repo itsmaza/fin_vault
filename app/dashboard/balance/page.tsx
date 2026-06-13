@@ -10,6 +10,7 @@ import {
     CreditCard,
     Building2,
 } from 'lucide-react';
+import Datetime from './Components/Datetime';
 
 function formatUSD(amount: number) {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
@@ -154,9 +155,7 @@ export default async function BalanceOverviewPage() {
                                         <p className="text-[12px] font-semibold text-[#0a3d2e]">
                                             {label}
                                         </p>
-                                        <p className="text-[11px] text-[#8a9e96]">
-                                            {formatDateTime(tx.createdAt)}
-                                        </p>
+                                        <Datetime date={tx.createdAt} />
                                     </div>
                                 </div>
                                 <div className="text-right">
