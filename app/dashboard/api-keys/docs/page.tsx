@@ -332,7 +332,7 @@ export default function ApiDocsPage() {
               <CodeBlock
                 language="javascript"
                 code={`// Node.js / fetch example
-const response = await fetch("https://api.finvaultpay.com/api/v1/payment/create", {
+const response = await fetch("https://fin-vault-6grp.vercel.app/api/v1/payment/create", {
   method: "POST",
   headers: {
     "Authorization": "Bearer fv_live_a1b2c3d4e5f6...",
