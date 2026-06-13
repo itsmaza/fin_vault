@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import {
   Key, Plus, Trash2, X, Loader2, Copy, Check,
-  Eye, EyeOff, ShieldCheck, Link2,
+  Eye, EyeOff, ShieldCheck, Link2, BookOpen,
 } from "lucide-react"
 import {
   getApiKeys,
@@ -176,14 +176,25 @@ export default function ApiKeysPage() {
             Manage access keys for FinVault Pay integration
           </p>
         </div>
-        <button
-          onClick={openModal}
-          disabled={keys.length >= 5}
-          className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-[#0a3d2e] hover:bg-[#0f5c44] disabled:opacity-50 disabled:cursor-not-allowed text-white text-[12px] font-semibold rounded-[8px] transition-colors"
-        >
-          <Plus size={13} />
-          New API Key
-        </button>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2">
+          <a
+            href="/dashboard/api-keys/docs"
+            className="flex items-center gap-1.5 px-4 py-2 bg-[#f6faf8] hover:bg-[#edf5f0] border border-[#dde8e3] text-[#5a7568] hover:text-[#0a3d2e] text-[12px] font-semibold rounded-[8px] transition-colors"
+          >
+            <BookOpen size={13} />
+            See Documentation
+          </a>
+          <button
+            onClick={openModal}
+            disabled={keys.length >= 5}
+            className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-[#0a3d2e] hover:bg-[#0f5c44] disabled:opacity-50 disabled:cursor-not-allowed text-white text-[12px] font-semibold rounded-[8px] transition-colors"
+          >
+            <Plus size={13} />
+            New API Key
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -210,7 +221,13 @@ export default function ApiKeysPage() {
         <ShieldCheck size={13} className="text-[#633806] mt-0.5 flex-shrink-0" />
         <p className="text-[12px] text-[#633806]">
           Keep your API keys secret. Never expose them in frontend code or public repositories.
-          Each key includes its own redirect and webhook URL.
+          Each key includes its own redirect and webhook URL.{" "}
+          <a
+            href="/dashboard/api-keys/docs"
+            className="underline underline-offset-2 font-semibold hover:text-[#7a4500] transition-colors"
+          >
+            View integration docs →
+          </a>
         </p>
       </div>
 
@@ -255,13 +272,22 @@ export default function ApiKeysPage() {
                 Create your first key to accept payments
               </p>
             </div>
-            <button
-              onClick={openModal}
-              className="cursor-pointer flex items-center gap-1.5 px-4 py-2 bg-[#E1F5EE] text-[#085041] text-[12px] font-semibold rounded-[8px] hover:bg-[#c8f0df] transition-colors"
-            >
-              <Plus size={12} />
-              Create first key
-            </button>
+            <div className="flex items-center gap-2">
+              <a
+                href="/dashboard/api-keys/docs"
+                className="flex items-center gap-1.5 px-4 py-2 bg-[#f6faf8] border border-[#dde8e3] text-[#5a7568] text-[12px] font-semibold rounded-[8px] hover:bg-[#edf5f0] transition-colors"
+              >
+                <BookOpen size={12} />
+                Docs
+              </a>
+              <button
+                onClick={openModal}
+                className="cursor-pointer flex items-center gap-1.5 px-4 py-2 bg-[#E1F5EE] text-[#085041] text-[12px] font-semibold rounded-[8px] hover:bg-[#c8f0df] transition-colors"
+              >
+                <Plus size={12} />
+                Create first key
+              </button>
+            </div>
           </div>
         )}
 
@@ -490,12 +516,22 @@ export default function ApiKeysPage() {
                     )}
                   </div>
 
-                  <button
-                    onClick={closeModal}
-                    className="cursor-pointer w-full py-2.5 bg-[#0a3d2e] hover:bg-[#0f5c44] text-white text-[13px] font-semibold rounded-[10px] transition-colors"
-                  >
-                    Done
-                  </button>
+                  {/* Actions */}
+                  <div className="flex gap-2.5">
+                    <a
+                      href="/dashboard/api-keys/docs"
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-[#f6faf8] border border-[#dde8e3] text-[#5a7568] hover:text-[#0a3d2e] hover:bg-[#edf5f0] text-[13px] font-semibold rounded-[10px] transition-colors"
+                    >
+                      <BookOpen size={13} />
+                      View Docs
+                    </a>
+                    <button
+                      onClick={closeModal}
+                      className="cursor-pointer flex-1 py-2.5 bg-[#0a3d2e] hover:bg-[#0f5c44] text-white text-[13px] font-semibold rounded-[10px] transition-colors"
+                    >
+                      Done
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <>

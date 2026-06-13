@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import type { SafeTransaction } from "@/types"
+import { formatDateTime } from "@/utils"
 
 // ─── Test Cards ───────────────────────────────────────────
 const TEST_CARDS = [
@@ -305,7 +306,7 @@ export default function DepositsPage() {
 
         {!loading && transactions.map((tx) => (
           <div key={tx._id} className="grid grid-cols-4 px-4 py-3.5 border-b border-[#f0f5f2] last:border-0 hover:bg-[#f6faf8] transition-colors items-center">
-            <p className="text-[12px] text-[#5a7568]">{formatDate(tx.createdAt)}</p>
+            <p className="text-[12px] text-[#5a7568]">{formatDateTime(tx.createdAt)}</p>
             <p className="text-[12px] font-mono text-[#5a7568] truncate pr-2">{tx.reference ?? "—"}</p>
             <p className="text-[13px] font-bold text-[#085041]" style={{ fontFamily: "'Fraunces', serif" }}>
               +{formatUSD(tx.amount)}
