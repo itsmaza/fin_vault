@@ -8,6 +8,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import mongoose from "mongoose"
+import Datetime from "./balance/Components/Datetime"
 
 function formatUSD(n: number) {
   return new Intl.NumberFormat("en-US", {
@@ -250,7 +251,7 @@ export default async function DashboardPage() {
                     <div>
                       <p className="text-[12px] font-semibold text-[#0a3d2e]">{label}</p>
                       <p className="text-[11px] text-[#8a9e96]">
-                        {formatDateTime(tx.createdAt)}
+                      <Datetime date={tx.createdAt} />
                         {tx.note ? ` · ${tx.note}` : ""}
                       </p>
                     </div>
