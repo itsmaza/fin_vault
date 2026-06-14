@@ -47,10 +47,12 @@ const PaymentIntentSchema = new Schema<IPaymentIntent>(
     redirectUrl: {
       type:     String,
       required: true,
+      trim:     true,
     },
     webhookUrl: {
       type:    String,
       default: null,
+      trim:    true,
     },
     metadata: {
       type:    Schema.Types.Mixed,
@@ -68,8 +70,9 @@ const PaymentIntentSchema = new Schema<IPaymentIntent>(
   { timestamps: { createdAt: true, updatedAt: false } }
 )
 
-// Auto expire
 PaymentIntentSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 })
+PaymentIntentSchema.index({ merchantId: 1, status: 1 })
+PaymentIntentSchema.index({ intentId: 1 }, { unique: true })
 
 const PaymentIntent: Model<IPaymentIntent> =
   mongoose.models.PaymentIntent ||

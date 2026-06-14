@@ -1,5 +1,4 @@
 // app/pay/[intentId]/page.tsx
-
 import { getSession } from "@/lib/session"
 import { redirect } from "next/navigation"
 import CheckoutClient from "./components/CheckoutClient"
@@ -10,14 +9,16 @@ import { getPaymentIntent } from "@/actions/payment.actions"
 export default async function PayPage({
   params,
 }: {
-  params: { intentId: string }
+  params: Promise<{ intentId: string }>
 }) {
+  const { intentId } = await params
+
   const session = await getSession()
   if (!session) {
-    redirect(`/login?redirect=/pay/${params.intentId}`)
+    redirect(`/login?redirect=/pay/${intentId}`)
   }
 
-  const result = await getPaymentIntent(params.intentId)
+  const result = await getPaymentIntent(intentId)
 
   if (!result.success || !result.data) {
     return (
