@@ -1,4 +1,6 @@
 // app/dashboard/analytics/page.tsx
+
+export const dynamic = "force-dynamic"
 import { getAnalyticsOverview } from "@/actions/analytics.actions"
 import { TrendingUp, TrendingDown, ArrowDownLeft, BarChart2 } from "lucide-react"
 import OverviewChart from "./components/OverviewChart"

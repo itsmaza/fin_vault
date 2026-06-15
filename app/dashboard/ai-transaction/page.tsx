@@ -1,4 +1,6 @@
 // app/dashboard/ai-transaction/page.tsx
+
+export const dynamic = "force-dynamic"
 import { requireAuth } from "@/lib/auth"
 import { connectDB } from "@/lib/db"
 import AiChat from "./components/AiChat"
