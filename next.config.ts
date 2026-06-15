@@ -5,7 +5,6 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // API routes এ CORS
         source: "/api/:path*",
         headers: [
           { key: "Access-Control-Allow-Origin",  value: "*" },
@@ -14,6 +13,21 @@ const nextConfig: NextConfig = {
         ],
       },
     ]
+  },
+
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**",
+      },
+    ],
+  },
+
+  experimental: {
+    serverActions: {
+      allowedOrigins: ["localhost:3000", "fin-vault-6grp.vercel.app"],
+    },
   },
 }
 

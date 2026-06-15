@@ -24,7 +24,7 @@ const AuthButtons = memo(function AuthButtons({
     return (
       <button
         onClick={onDashboard}
-        className={`px-4 py-2 text-[13px] font-semibold text-white bg-[#0a3d2e] rounded-[8px] hover:bg-[#0f5c44] active:scale-[.98] transition-colors ${className}`}
+        className={`px-4 py-2 cursor-pointer text-[13px] font-semibold text-white bg-[#0a3d2e] rounded-[8px] hover:bg-[#0f5c44] active:scale-[.98] transition-colors ${className}`}
       >
         Go to Dashboard
       </button>
