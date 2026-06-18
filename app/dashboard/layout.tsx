@@ -41,22 +41,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
                     {/* Right — user info */}
                     <div className="flex items-center gap-3">
-                        {/* Balance pill */}
-                        <div className="hidden sm:flex items-center gap-1.5 bg-white border border-[#dde8e3] rounded-full px-3 py-1.5">
-                            <span className="text-[10px] font-semibold text-[#8a9e96] tracking-wide">
-                                BALANCE
-                            </span>
-                            <span
-                                className="text-[12px] font-bold text-[#0a3d2e]"
-                                style={{ fontFamily: "'Fraunces', serif" }}
-                            >
-                                $
-                                {Number(user?.balance ?? 0).toLocaleString('en-US', {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                })}
-                            </span>
-                        </div>
+              
+                
 
                         {/* Online dot + avatar */}
                         <div className="relative">
