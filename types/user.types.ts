@@ -35,6 +35,7 @@ export type SafeUser = {
   status: UserStatus
   createdAt: Date
   updatedAt: Date
+  isSendEmail: boolean
 }
 
 

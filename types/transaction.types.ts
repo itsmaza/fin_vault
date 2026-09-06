@@ -49,6 +49,7 @@ export type SafeTransaction = {
   merchantId?:  string
   bankDetails?: BankDetails
   createdAt:    Date
+  
 }
 
 export type CardValidationResult = {

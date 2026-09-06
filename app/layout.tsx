@@ -1,11 +1,11 @@
 // app/layout.tsx
 import type { Metadata } from "next"
-import { Sora, Inter } from "next/font/google"
+import { Plus_Jakarta_Sans, Inter } from "next/font/google"
 import "./globals.css"
 
-const sora = Sora({
+const jakarta = Plus_Jakarta_Sans({
   subsets:  ["latin"],
-  weight:   ["400", "600", "700"],
+  weight:   ["500", "600", "700"],
   variable: "--font-display",
   display:  "swap",
 })
@@ -59,7 +59,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${sora.variable} ${inter.variable}`}>
+    <html lang="en" className={`${jakarta.variable} ${inter.variable}`}>
       <body className="font-sans antialiased bg-[#f6faf8]">
         {children}
       </body>

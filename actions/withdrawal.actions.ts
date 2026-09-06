@@ -7,6 +7,7 @@ import { requireAuth } from "@/lib/auth"
 import { ok, fail } from "@/lib/response"
 import mongoose from "mongoose"
 import type { ActionResult, SafeTransaction, WithdrawInput } from "@/types"
+import { mailEvent } from "@/utils/event/handler"
 
 const PAGE_SIZE = 10
 
@@ -57,6 +58,19 @@ export async function withdrawFunds(
     })
 
     const result = await Transaction.findById(transaction._id).lean()
+
+    if(user.isSendEmail){
+       mailEvent.emit('sendMail', {
+        to: user.email,
+        subject: "Withdrawal Initiated",
+        html: `<p>Dear ${user.name},</p>
+        <p>Your withdrawal of $${input.amount.toFixed(2)} has been initiated. It will arrive in 1–3 business days.</p>
+        <p>Thank you for using our service!</p>
+        <p>Best regards,<br/>The Team</p>`,
+        
+       })
+    }
+
     return ok(
       `$${input.amount.toFixed(2)} withdrawal initiated. Arrives in 1–3 business days.`,
       result as unknown as SafeTransaction
