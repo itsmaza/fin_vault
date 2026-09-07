@@ -28,9 +28,8 @@ function getTransporter(): Transporter {
   return transporter
 }
 
- const sendMail = async ({ to, subject, html }: MailData): Promise<void> => {
+ export const sendMail = async ({ to, subject, html }: MailData): Promise<void> => {
   try {
-    console.log("Sending mail...")
 
     await getTransporter().sendMail({
       from: process.env.SMTP_FROM ?? `"FinVault" <${process.env.SMTP_USER}>`,
@@ -46,6 +45,4 @@ function getTransporter(): Transporter {
 }
 
 
-mailEvent.on("sendMail", async (mailData: MailData) => {
-  await sendMail(mailData)
-})
+

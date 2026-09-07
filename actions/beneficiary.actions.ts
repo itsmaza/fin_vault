@@ -8,7 +8,8 @@ import { ok, fail } from "@/lib/response"
 
 import { Beneficiary, User } from "@/models"
 import { ActionResult, AddBeneficiaryInput, SafeBeneficiary } from "@/types"
-import { mailEvent } from "@/utils/event/handler"
+import { mailEvent, sendMail } from "@/utils/event/handler"
+import { after } from "next/server"
 
 export async function addBeneficiary(
   input: AddBeneficiaryInput
@@ -37,15 +38,15 @@ export async function addBeneficiary(
     })
 
 
-    if(user.isSendEmail){
-       mailEvent.emit('sendMail', {
-        to: user.email,
-        subject: "Beneficiary Added",
-        html: `<p>Dear ${user.name},</p><p>You have successfully added ${beneficiary.name} as a beneficiary.</p>`,
-        
-       })
+after(async () => {
+    if (user.isSendEmail) {
+        await sendMail({
+            to: user.email,
+            subject: 'Beneficiary Added',
+            html: `<p>Dear ${user.name},</p><p>You have successfully added ${beneficiary.name} as a beneficiary.</p>`,
+        });
     }
-
+});
 
     return ok("Beneficiary added", {
       _id: beneficiary._id.toString(),

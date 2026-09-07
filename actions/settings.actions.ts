@@ -7,7 +7,8 @@ import { requireAuth } from '@/lib/auth';
 import { ok, fail } from '@/lib/response';
 import { hashPasscode, verifyPasscode } from '@/lib/hash';
 import type { ActionResult, SafeUser } from '@/types';
-import { mailEvent } from '@/utils/event/handler';
+import { mailEvent, sendMail } from '@/utils/event/handler';
+import { after } from 'next/server';
 
 // ─── Update Profile ───────────────────────────────────────
 export async function updateProfile(input: {
@@ -66,16 +67,16 @@ export async function toggleEmailNotification(
 
         await User.findByIdAndUpdate(user._id, { isSendEmail: enabled });
 
-
-            mailEvent.emit('sendMail', {
-                to: user.email,
-                subject: enabled ? 'Email Notifications Enabled' : 'Email Notifications Disabled',
-                html: `<p>Dear ${user.name},</p>
+after(async () => {
+    await sendMail({
+        to: user.email,
+        subject: enabled ? 'Email Notifications Enabled' : 'Email Notifications Disabled',
+        html: `<p>Dear ${user.name},</p>
         <p>Your email notifications have been ${enabled ? 'enabled' : 'disabled'}.</p>
         <p>Thank you for using our service!</p>
         <p>Best regards,<br/>The Team</p>`,
-            });
-        
+    });
+});
 
         return ok(enabled ? 'Email notifications enabled' : 'Email notifications disabled', {
             isSendEmail: enabled,

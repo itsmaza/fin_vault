@@ -7,7 +7,8 @@ import { requireAuth } from '@/lib/auth';
 import { ok, fail } from '@/lib/response';
 import mongoose from 'mongoose';
 import type { ActionResult, SafeTransaction, DepositInput } from '@/types';
-import { mailEvent } from '@/utils/event/handler';
+import { mailEvent, sendMail } from '@/utils/event/handler';
+import { after } from 'next/server';
 
 const PAGE_SIZE = 10;
 
@@ -64,18 +65,19 @@ export async function deposit(input: DepositInput): Promise<ActionResult<SafeTra
         });
 
         const result = await Transaction.findById(transaction._id).lean();
-        if (user.isSendEmail) {
-            mailEvent.emit('sendMail', {
-                to: user.email,
-                subject: 'Deposit Successful',
-                html: `<p>Dear ${user.name},</p>
+after(async () => {
+    if (user.isSendEmail) {
+        await sendMail({
+            to: user.email,
+            subject: 'Deposit Successful',
+            html: `<p>Dear ${user.name},</p>
       <p>Your deposit of $${input.amount.toFixed(2)} has been successfully processed.</p>
       <p>Transaction Reference: ${transaction.reference}</p>
       <p>Thank you for using our service!</p>
       <p>Best regards,<br/>The Team</p>`,
-            });
-        
-          }
+        });
+    }
+});
 
           
         return ok(

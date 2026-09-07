@@ -7,7 +7,8 @@ import { requireAuth } from '@/lib/auth';
 import { ok, fail } from '@/lib/response';
 import type { ActionResult, SafeTransaction, SendMoneyInput } from '@/types';
 import mongoose from 'mongoose';
-import { mailEvent } from '@/utils/event/handler';
+import { mailEvent, sendMail } from '@/utils/event/handler';
+import { after } from 'next/server';
 
 const PAGE_SIZE = 10;
 
@@ -183,17 +184,40 @@ export async function sendMoney(input: SendMoneyInput): Promise<ActionResult<Saf
 
 
 
-        if (receiver.isSendEmail) {
-            mailEvent.emit('sendMail', {
+
+
+
+        after(async () => {
+    const tasks: Promise<void>[] = [];
+
+    if (sender.isSendEmail) {
+        tasks.push(
+            sendMail({
+                to: sender.email,
+                subject: 'Money sent successfully!',
+                html: `<p>Dear ${sender.name},</p>
+          <p>You have successfully sent $${input.amount.toFixed(2)} to ${receiver.name}.</p>
+          <p>Transaction Reference: ${ref}</p>`,
+            }).catch((err) => console.error('Sender mail failed:', err))
+        );
+    }
+
+    if (receiver.isSendEmail) {
+        tasks.push(
+            sendMail({
                 to: receiver.email,
                 subject: "You've received money!",
                 html: `<p>Dear ${receiver.name},</p>
           <p>You have received $${input.amount.toFixed(2)} from ${sender.name}.</p>
-          <p>Transaction Reference: ${ref}</p>
-          <p>Thank you for using our service!</p>
-          <p>Best regards,<br/>The Team</p>`,
-            });
-        }
+          <p>Transaction Reference: ${ref}</p>`,
+            }).catch((err) => console.error('Receiver mail failed:', err))
+        );
+    }
+
+    await Promise.allSettled(tasks);
+});
+
+
 
         return ok(`$${input.amount.toFixed(2)} sent to ${receiver.email} successfully`, createdTx);
     } catch (error) {
